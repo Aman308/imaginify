@@ -1,33 +1,41 @@
 import mongoose, { Mongoose } from "mongoose";
 
-const MONOGODB_URL = process.env.MONGODB_URI;
+const MONGODB_URL = process.env.MONGODB_URI;
 
 interface MongooseConnection {
   conn: Mongoose | null;
   promise: Promise<Mongoose> | null;
 }
 
-let cashed: MongooseConnection = (global as any).mongoose;
-
-if (!cashed) {
-  cashed = (global as any).mongoose = { conn: null, promise: null };
+// ✅ Extend the global object to include `mongoose`
+declare global {
+  var mongoose: MongooseConnection | undefined;
 }
 
-export const connectToDatabase = async () => {
-  if (cashed.conn) {
-    return cashed.conn;
+// ✅ Ensure `cached` has the correct type
+let cached: MongooseConnection = global.mongoose || { conn: null, promise: null };
+
+if (!global.mongoose) {
+  global.mongoose = cached;
+}
+
+export const connectToDatabase = async (): Promise<Mongoose> => {
+  if (cached.conn) {
+    return cached.conn;
   }
 
-  if (!MONOGODB_URL) {
+  if (!MONGODB_URL) {
     throw new Error("Please set the MONGODB_URI environment variable.");
   }
 
-  cashed.promise =
-    cashed.promise ||
-    mongoose.connect(MONOGODB_URL, {
+  cached.promise =
+    cached.promise ||
+    mongoose.connect(MONGODB_URL, {
       dbName: "imaginify",
       bufferCommands: false,
     });
-    cashed.conn = await cashed.promise;
-    return cashed.conn;
+
+  cached.conn = await cached.promise;
+  return cached.conn;
 };
+
