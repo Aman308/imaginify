@@ -7,13 +7,12 @@ interface MongooseConnection {
   promise: Promise<Mongoose> | null;
 }
 
-// ✅ Extend the global object to include `mongoose`
+// Ensure global caching to prevent multiple DB connections in dev mode
 declare global {
   var mongoose: MongooseConnection | undefined;
 }
 
-// ✅ Ensure `cached` has the correct type
-let cached: MongooseConnection = global.mongoose || { conn: null, promise: null };
+const cached: MongooseConnection = global.mongoose || { conn: null, promise: null };
 
 if (!global.mongoose) {
   global.mongoose = cached;
@@ -38,4 +37,3 @@ export const connectToDatabase = async (): Promise<Mongoose> => {
   cached.conn = await cached.promise;
   return cached.conn;
 };
-
